@@ -41,7 +41,7 @@ There is no `Dockerfile` in this project. You can build a container image (if yo
 
 ## In case you find a bug/suggested improvement for Spring Petclinic
 
-Our issue tracker is available [here](https://github.com/spring-projects/spring-petclinic/issues).
+Our     issue tracker is available [here](https://github.com/spring-projects/spring-petclinic/issues).
 
 ## Database configuration
 
