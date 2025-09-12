@@ -3,7 +3,7 @@ pipeline {
 
     // The 'tools' block has been REMOVED as the Docker image contains Maven and Java.
     tools {
-        maven 'maven3911' // Name must match your Jenkins Global Tool Configuration
+      //  maven 'maven3911' // Name must match your Jenkins Global Tool Configuration
         jdk 'JDK-21'      // Name must match your Jenkins Global Tool Configuration
     }
     environment {
