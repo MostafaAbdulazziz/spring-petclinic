@@ -2,10 +2,7 @@ pipeline {
     agent none // Agent will be defined per stage
 
     // The 'tools' block has been REMOVED as the Docker image contains Maven and Java.
-    tools {
-      //  maven 'maven3911' // Name must match your Jenkins Global Tool Configuration
-        jdk 'JDK-21'      // Name must match your Jenkins Global Tool Configuration
-    }
+
     environment {
         // --- Configuration ---
         DOCKERHUB_USERNAME      = "mostafaabdelazziz"
@@ -16,17 +13,18 @@ pipeline {
     }
 
     stages {
-        stage('Build and Analyze in Parallel') {
+           stage('Build and Analyze in Parallel') {
             parallel {
                 stage('Build and Test') {
+                    agent any
                     steps {
                         sh "mvn clean install"
                         stash name: 'jar-file', includes: 'target/*.jar'
                     }
                 }
                 stage('SonarQube Analysis') {
+                    agent any
                     steps {
-                        // Load the SonarQube token credential inside the stage
                         withCredentials([string(credentialsId: '9091', variable: 'SONAR_TOKEN')]) {
                             withSonarQubeEnv('SonarQubeServer') {
                                 sh "mvn sonar:sonar -Dsonar.login=${SONAR_TOKEN}"
@@ -36,33 +34,25 @@ pipeline {
                 }
             }
         }
-
-        // ... rest of your pipeline stages (Build & Push, Install Docker, Deploy) remain the same ...
-
-    stage('Build & Push Docker Image') {
-        agent any
-        steps {
-            withCredentials([
-                string(credentialsId: 'nexus_docker_username', variable: 'NEXUS_USERNAME'),
-                string(credentialsId: 'nexus_docker_password', variable: 'NEXUS_PASSWORD')
-            ]) {
-                unstash 'jar-file'
-                sh """
-                    # Build the Docker image
-                    docker build -t spring-petclinic:1.0 .
-
-                    # Tag image for Nexus registry
-                    docker tag spring-petclinic:1.0 ec2-51-21-244-131.eu-north-1.compute.amazonaws.com:8082/docker-hosted/spring-petclinic:1.0
-
-                    # Login to Nexus Docker registry
-                    echo "${NEXUS_PASSWORD}" | docker login ec2-51-21-244-131.eu-north-1.compute.amazonaws.com:8082 -u "${NEXUS_USERNAME}" --password-stdin
-
-                    # Push to Nexus
-                    docker push ec2-51-21-244-131.eu-north-1.compute.amazonaws.com:8082/docker-hosted/spring-petclinic:1.0
-                """
+        stage('Build & Push Docker Image') {
+            agent any
+            steps {
+                withCredentials([
+                    string(credentialsId: 'nexus_docker_username', variable: 'NEXUS_USERNAME'),
+                    string(credentialsId: 'nexus_docker_password', variable: 'NEXUS_PASSWORD')
+                ]) {
+                    unstash 'jar-file'
+                    sh """
+                        docker build -t spring-petclinic:1.0 .
+                        docker tag spring-petclinic:1.0 ec2-51-21-244-131.eu-north-1.compute.amazonaws.com:8082/docker-hosted/spring-petclinic:1.0
+                        echo "${NEXUS_PASSWORD}" | docker login ec2-51-21-244-131.eu-north-1.compute.amazonaws.com:8082 -u "${NEXUS_USERNAME}" --password-stdin
+                        docker push ec2-51-21-244-131.eu-north-1.compute.amazonaws.com:8082/docker-hosted/spring-petclinic:1.0
+                    """
+                }
             }
         }
-    }
+
+
 
     //     stage('Install Docker on Staging Host') {
     //         agent any
