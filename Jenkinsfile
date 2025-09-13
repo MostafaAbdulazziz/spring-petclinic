@@ -56,7 +56,7 @@ pipeline {
             agent any
             steps {
                 withCredentials([
-                    sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
+                    sshUserPrivateKey(credentialsId: 'ec2-app-deployer-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
                     string(credentialsId: 'nexus_docker_username', variable: 'NEXUS_USERNAME'),
                     string(credentialsId: 'nexus_docker_password', variable: 'NEXUS_PASSWORD')
                 ]) {
