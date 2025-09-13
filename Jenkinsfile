@@ -14,7 +14,7 @@ pipeline {
 
     stages {
            stage('Build and Analyze in Parallel') {
-            parallel {
+          
                 stage('Build and Test') {
                     agent any
                     steps {
@@ -32,7 +32,7 @@ pipeline {
                         }
                     }
                 }
-            }
+            
         }
         stage('Build & Push Docker Image') {
             agent any
