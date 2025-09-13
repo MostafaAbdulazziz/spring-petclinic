@@ -54,7 +54,7 @@ pipeline {
             steps {
                 sshagent(['ec2-app-deployer-key']) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no ${EC2_STAGING_HOST} '
+                        ssh -o StrictHostKeyChecking=no ${EC2_STAGING_HOST} 
                             set -e
                             # --- Install Docker (Ubuntu) ---
                             if ! command -v docker &> /dev/null; then
