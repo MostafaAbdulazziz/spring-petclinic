@@ -42,9 +42,9 @@ pipeline {
                     unstash 'jar-file'
                     sh """
                         docker build -t spring-petclinic:1.0 .
-                        docker tag spring-petclinic:1.0 http://ec2-13-61-184-206.eu-north-1.compute.amazonaws.com:8082/docker-hosted/spring-petclinic:1.0
-                        echo "${NEXUS_PASSWORD}" | docker login http://ec2-13-61-184-206.eu-north-1.compute.amazonaws.com:8082 -u "${NEXUS_USERNAME}" --password-stdin
-                        docker push http://ec2-13-61-184-206.eu-north-1.compute.amazonaws.com:8082/docker-hosted/spring-petclinic:1.0
+                        docker tag spring-petclinic:1.0 ec2-13-61-184-206.eu-north-1.compute.amazonaws.com:8082/docker-hosted/spring-petclinic:1.0
+                        echo "${NEXUS_PASSWORD}" | docker login ec2-13-61-184-206.eu-north-1.compute.amazonaws.com:8082 -u "${NEXUS_USERNAME}" --password-stdin
+                        docker push ec2-13-61-184-206.eu-north-1.compute.amazonaws.com:8082/docker-hosted/spring-petclinic:1.0
                     """
                 }
             }
