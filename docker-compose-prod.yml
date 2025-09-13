@@ -1,33 +1,47 @@
+version: '3.8'
+
 services:
   db:
-    image: mysql:9.2
+    image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: petclinic
-      MYSQL_USER: petclinic
-      MYSQL_PASSWORD: petclinic
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-petclinic}
+      MYSQL_USER: ${DB_USER:-petclinic}
+      MYSQL_PASSWORD: ${DB_PASS:-petclinic}
     ports:
-      - "3306:3306"  # Changed to avoid conflict
+      - "3306:3306"
       - "33060:33060"
     volumes:
-      - mysql-db-1:/var/lib/mysql  # Fixed syntax
+      - mysql-db-1:/var/lib/mysql
     networks:
-      - net1
+      - petclinic-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
   petclinic:
-    image: ec2-13-61-184-206.eu-north-1.compute.amazonaws.com:8082/spring-petclinic:1.0
+    image: ${NEXUS_REGISTRY:-ec2-13-61-184-206.eu-north-1.compute.amazonaws.com:8082}/docker-hosted/spring-petclinic:${BUILD_NUMBER:-latest}
     environment:
       - SPRING_PROFILES_ACTIVE=mysql
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/petclinic
-      - SPRING_DATASOURCE_USERNAME=petclinic
-      - SPRING_DATASOURCE_PASSWORD=petclinic
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/${DB_NAME:-petclinic}
+      - SPRING_DATASOURCE_USERNAME=${DB_USER:-petclinic}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS:-petclinic}
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_JPA_SHOW_SQL=true
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.MySQL8Dialect
     ports:
       - "8080:8080"
     networks:
-      - net1
+      - petclinic-network
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  petclinic-network:
+    driver: bridge
 
 volumes:
   mysql-db-1:
