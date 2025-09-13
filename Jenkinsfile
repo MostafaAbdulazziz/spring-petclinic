@@ -13,16 +13,14 @@ pipeline {
     }
 
     stages {
-           stage('Build and Analyze in Parallel') {
-          
-                stage('Build and Test') {
-                    agent any
-                    steps {
+        stage('Build and Test') {
+            agent any
+            steps {
                         sh "mvn clean install"
                         stash name: 'jar-file', includes: 'target/*.jar'
                     }
                 }
-                stage('SonarQube Analysis') {
+        stage('SonarQube Analysis') {
                     agent any
                     steps {
                         withCredentials([string(credentialsId: '9091', variable: 'SONAR_TOKEN')]) {
@@ -33,7 +31,7 @@ pipeline {
                     }
                 }
             
-        }
+        
         stage('Build & Push Docker Image') {
             agent any
             steps {
