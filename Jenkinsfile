@@ -2,10 +2,11 @@ pipeline {
     agent none
 
     environment {
-        EC2_STAGING_HOST        = "ec2-user@ec2-13-48-68-86.eu-north-1.compute.amazonaws.com"
+        EC2_STAGING_HOST        = "ubuntu@ec2-13-48-68-86.eu-north-1.compute.amazonaws.com" // Ubuntu EC2 instance
         NEXUS_REGISTRY          = "ec2-13-61-184-206.eu-north-1.compute.amazonaws.com:8082"
         DB_NAME                 = "petclinic"
         DB_USER                 = "petclinic"
+        STAGING_USER            = "ubuntu" // Explicitly set for Ubuntu
     }
 
     stages {
@@ -55,36 +56,34 @@ pipeline {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${EC2_STAGING_HOST} '
                             set -e
-                            STAGING_USER=\$(echo "${EC2_STAGING_HOST}" | cut -d"@" -f2)
-
-                            # --- Install Docker ---
+                            # --- Install Docker (Ubuntu) ---
                             if ! command -v docker &> /dev/null; then
                                 echo "Docker not found. Installing..."
-                                sudo yum update -y
-                                sudo yum install -y docker
+                                sudo apt-get update -y
+                                sudo apt-get install -y docker.io
                                 sudo systemctl start docker
                                 sudo systemctl enable docker
-                                sudo usermod -aG docker \$STAGING_USER
+                                sudo usermod -aG docker ubuntu
                                 echo "Docker installed successfully."
                             else
                                 echo "Docker is already installed."
                             fi
 
-                            # --- Install Docker Compose ---
+                            # --- Install Docker Compose (Ubuntu) ---
                             if ! command -v docker-compose &> /dev/null; then
                                 echo "Docker Compose not found. Installing..."
-                                sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
+                                sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
                                 sudo chmod +x /usr/local/bin/docker-compose
                                 echo "Docker Compose installed successfully."
                             else
                                 echo "Docker Compose is already installed."
                             fi
-                            
+
                             # --- Configure Docker for insecure registry ---
                             if ! grep -q "${NEXUS_REGISTRY}" /etc/docker/daemon.json 2>/dev/null; then
                                 echo "Configuring Docker daemon for insecure registry..."
                                 sudo mkdir -p /etc/docker
-                                echo "{\"insecure-registries\":[\"${NEXUS_REGISTRY}\"]}" | sudo tee /etc/docker/daemon.json
+                                echo '{"insecure-registries":["${NEXUS_REGISTRY}"]}' | sudo tee /etc/docker/daemon.json
                                 sudo systemctl restart docker
                                 echo "Docker daemon configured for insecure registry."
                             fi
@@ -104,10 +103,10 @@ pipeline {
                 ]) {
                     sshagent(['ec2-app-deployer-key']) {
                         sh """
-                            # Copy the compose file to the EC2 instance
+                            # Copy the compose file to the EC2 Ubuntu instance
                             scp -o StrictHostKeyChecking=no docker-compose.yml ${EC2_STAGING_HOST}:~/
 
-                            # SSH into the instance to deploy both containers
+                            # SSH into the Ubuntu instance to deploy containers
                             ssh -o StrictHostKeyChecking=no ${EC2_STAGING_HOST} '
                                 # Export variables for docker-compose
                                 export BUILD_NUMBER=${BUILD_NUMBER}
@@ -116,25 +115,25 @@ pipeline {
                                 export DB_PASS=${DB_PASS_SECRET}
                                 export MYSQL_ROOT_PASSWORD=${DB_PASS_SECRET}
                                 export NEXUS_REGISTRY=${NEXUS_REGISTRY}
-                                
+
                                 # Login to Nexus registry on staging server
                                 echo "${NEXUS_PASSWORD}" | docker login ${NEXUS_REGISTRY} -u "${NEXUS_USERNAME}" --password-stdin
-                                
+
                                 # Stop existing containers
                                 docker-compose down || true
-                                
+
                                 # Pull the latest images
                                 docker-compose pull
-                                
+
                                 # Start services
                                 docker-compose -f docker-compose-prod.yml up -d
-                                
+
                                 # Wait for services to start
                                 sleep 30
-                                
+
                                 # Check service status
                                 docker-compose ps
-                                
+
                                 # Check application health
                                 echo "Waiting for application to start..."
                                 for i in {1..30}; do
@@ -142,7 +141,7 @@ pipeline {
                                         echo "Application is healthy!"
                                         break
                                     fi
-                                    echo "Attempt \$i: Application not ready yet..."
+                                    echo "Attempt $i: Application not ready yet..."
                                     sleep 10
                                 done
                             '
