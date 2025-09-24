@@ -1,0 +1,11 @@
+on:
+  push: 
+    branches: [main , master]
+  pull_request:
+    branches: [main , master]
+jobs:
+  build:
+    runs-on: ubunt-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
