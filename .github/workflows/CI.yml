@@ -15,17 +15,9 @@ jobs:
           java-version: '17'
       - name: Build with Maven
         run: mvn clean install
-  code_quality:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
-        with:
-          projectBaseDir: '.'
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  sonarqube:
+  code_quality_review:
     needs: build_and_test
-    runs-on: ubuntu-latest  # Use self-hosted runner (or 'ubuntu-latest' for GitHub-hosted)
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -34,6 +26,4 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-          -Dsonar.projectKey=MostafaAbdulazziz_spring-petclinic_b93a3332-c1f3-492a-ab9e-379e3b51818b \
-          -Dsonar.projectName='spring-petclinic'
+        run: mvn clean verify sonar:sonar -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN
